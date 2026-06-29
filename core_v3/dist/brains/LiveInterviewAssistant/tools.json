@@ -1,0 +1,94 @@
+[
+  {
+    "type": "function",
+    "name": "process_admin",
+    "description": "Submit structured information from the applicant so the Python live interview assistant can choose the next controlled interview step.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "service_type": {
+          "type": "string",
+          "description": "Current interview service stage.",
+          "enum": [
+            "unknown",
+            "start",
+            "mode_selection",
+            "visa_selection",
+            "training",
+            "interview"
+          ]
+        },
+        "selected_mode": {
+          "type": "string",
+          "description": "Practice mode selected by the applicant.",
+          "enum": [
+            "training",
+            "interview"
+          ]
+        },
+        "selected_visa_type": {
+          "type": "string",
+          "description": "Visa type selected by the applicant.",
+          "enum": [
+            "f1",
+            "b1_b2"
+          ]
+        },
+        "user_answer": {
+          "type": "string",
+          "description": "The applicant's actual answer to the current prompt or their setup selection in simple text. Do not rewrite off-topic text into a valid answer."
+        },
+        "extracted_payload": {
+          "type": "object",
+          "description": "Optional direct fields extracted from the applicant's answer for the current step only. Use exact applicant-provided facts; leave missing fields absent. Examples: passport, form_i20, academic_background, visit_purpose."
+        },
+        "answered_current_question": {
+          "type": "boolean",
+          "description": "Set true only when the applicant gave a plausible answer to the exact active question. Set false for setup choices, off-topic text, help requests, skip requests, or answers to another question."
+        },
+        "answer_is_unclear": {
+          "type": "boolean",
+          "description": "Set true when the applicant's response does not answer the current question, is off-topic, is only another setup selection during an active question, asks for help instead of answering, asks to skip, or is unclear enough that the assistant should repeat/wait instead of moving forward."
+        },
+        "answer_score": {
+          "type": "integer",
+          "description": "Training Session only. Score the applicant's answer from 0 to 100 for relevance, clarity, honesty, specificity, and interview readiness.",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "strengths": {
+          "type": "array",
+          "description": "Training Session only. Short strengths from the applicant's answer.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "weaknesses": {
+          "type": "array",
+          "description": "Training Session only. Short weaknesses, missing details, or concerns from the applicant's answer.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "suggestions": {
+          "type": "array",
+          "description": "Training Session only. Short suggestions to improve the same answer without inventing fake facts.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "wants_next_question": {
+          "type": "boolean",
+          "description": "Set true only if the applicant explicitly asks to skip or move to the next training question."
+        },
+        "cancel_current_request": {
+          "type": "boolean",
+          "description": "Set true only if the applicant clearly asks to cancel or restart the current live interview flow."
+        }
+      },
+      "required": [
+        "service_type"
+      ]
+    }
+  }
+]

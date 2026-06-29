@@ -1,0 +1,15 @@
+{
+  "llm": "gpt-realtime-mini",
+  "tts_model": "gpt-4o-mini-tts",
+  "stt": "whisper-1",
+  "stt_language": "en",
+  "stt_prompt": "The applicant is speaking English during a US visa interview practice session. Transcribe in English only.",
+  "voice": "ash",
+  "threshold": 0.5,
+  "prefix_padding_ms": 300,
+  "silence_duration_ms": 500,
+  "temperature": 0.8,
+  "max_response_output_tokens": "inf",
+  "stream": true,
+  "stop": null
+}

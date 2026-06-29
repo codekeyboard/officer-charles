@@ -1,0 +1,214 @@
+{
+  "generated_at": "2026-06-22T00:00:00Z",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/",
+      "name": "home",
+      "controller": "closure (routes/web.php)",
+      "middleware": [],
+      "auth_required": false,
+      "returns": "Inertia page 'welcome' (loads initial Ai messages)",
+      "description": "Public landing page that seeds the chat UI with stored messages.",
+      "request": {
+        "params": {},
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "body": "Inertia HTML page with initial props: { messages: [{id,role,content,agent_id,created_at}] }"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard",
+      "name": "dashboard",
+      "controller": "inertia (routes/web.php)",
+      "middleware": ["auth","verified"],
+      "auth_required": true,
+      "returns": "Inertia page 'dashboard'",
+      "description": "Authenticated dashboard (video UI placeholder in frontend).",
+      "request": { "params": {}, "body": null },
+      "response": { "status": 200, "body": "Inertia HTML page (dashboard)" }
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "name": null,
+      "controller": "redirect to /settings/profile",
+      "middleware": ["auth"],
+      "auth_required": true,
+      "returns": "Redirect",
+      "description": "Redirects to profile settings.",
+      "request": { "params": {}, "body": null },
+      "response": { "status": 302, "body": "Location: /settings/profile" }
+    },
+    {
+      "method": "GET",
+      "path": "/settings/profile",
+      "name": "profile.edit",
+      "controller": "App\\Http\\Controllers\\Settings\\ProfileController@edit",
+      "middleware": ["auth"],
+      "auth_required": true,
+      "returns": "Inertia page 'settings/profile'",
+      "description": "View/edit user profile settings.",
+      "request": { "params": {}, "body": null },
+      "response": { "status": 200, "body": "Inertia page with user profile props" }
+    },
+    {
+      "method": "PATCH",
+      "path": "/settings/profile",
+      "name": "profile.update",
+      "controller": "App\\Http\\Controllers\\Settings\\ProfileController@update",
+      "middleware": ["auth"],
+      "auth_required": true,
+      "returns": "Redirect to profile settings",
+      "description": "Update user profile information.",
+      "request": {
+        "params": {},
+        "body": {
+          "name": "string (optional)",
+          "email": "string (optional, email)",
+          "other_profile_fields": "... (validated by ProfileUpdateRequest)"
+        }
+      },
+      "response": { "status": 302, "body": "Redirect to profile.edit with flash message" }
+    },
+    {
+      "method": "DELETE",
+      "path": "/settings/profile",
+      "name": "profile.destroy",
+      "controller": "App\\Http\\Controllers\\Settings\\ProfileController@destroy",
+      "middleware": ["auth","verified"],
+      "auth_required": true,
+      "returns": "Redirect / (deletes account)",
+      "description": "Delete user account.",
+      "request": { "params": {}, "body": null },
+      "response": { "status": 302, "body": "Redirect to / after logout and deletion" }
+    },
+    {
+      "method": "GET",
+      "path": "/settings/security",
+      "name": "security.edit",
+      "controller": "App\\Http\\Controllers\\Settings\\SecurityController@edit",
+      "middleware": ["auth","verified","RequirePassword (per-route)"],
+      "auth_required": true,
+      "returns": "Inertia page 'settings/security'",
+      "description": "Security settings: two-factor, passkeys, password rules, etc.",
+      "request": { "params": {}, "body": null },
+      "response": { "status": 200, "body": "Inertia page with: { canManageTwoFactor, canManagePasskeys, passkeys[], passwordRules, twoFactorEnabled? }" }
+    },
+    {
+      "method": "PUT",
+      "path": "/settings/password",
+      "name": "user-password.update",
+      "controller": "App\\Http\\Controllers\\Settings\\SecurityController@update",
+      "middleware": ["auth","verified","throttle:6,1"],
+      "auth_required": true,
+      "returns": "Redirect back",
+      "description": "Change user password.",
+      "request": {
+        "params": {},
+        "body": {
+          "current_password": "string (required)",
+          "password": "string (required, confirmed)",
+          "password_confirmation": "string (required)"
+        }
+      },
+      "response": { "status": 302, "body": "Redirect back with success flash" }
+    },
+    {
+      "method": "GET",
+      "path": "/settings/appearance",
+      "name": "appearance.edit",
+      "controller": "inertia (routes/settings.php)",
+      "middleware": ["auth","verified"],
+      "auth_required": true,
+      "returns": "Inertia page 'settings/appearance'",
+      "description": "Appearance preferences.",
+      "request": { "params": {}, "body": null },
+      "response": { "status": 200, "body": "Inertia page" }
+    },
+    {
+      "method": "GET",
+      "path": "/.well-known/passkey-endpoints",
+      "name": "well-known.passkeys",
+      "controller": "closure (routes/settings.php)",
+      "middleware": [],
+      "auth_required": false,
+      "returns": "JSON listing enroll/manage passkey URLs",
+      "description": "Well-known endpoints used by the frontend for passkey enrollment/management.",
+      "request": { "params": {}, "body": null },
+      "response": { "status": 200, "body": "{ enroll: string, manage: string }" }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/messages",
+      "name": null,
+      "controller": "App\\Http\\Controllers\\AiMessageController@index",
+      "middleware": ["api"],
+      "auth_required": false,
+      "returns": "JSON array of stored messages",
+      "description": "Used by the chat UI to load conversation history.",
+      "request": { "params": {}, "query": { "mode": "optional filter (training|interview)" }, "body": null },
+      "response": { "status": 200, "body": "[ { id, role, content, agent_id, created_at, mode } ]" }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/messages",
+      "name": null,
+      "controller": "App\\Http\\Controllers\\AiMessageController@store",
+      "middleware": ["api"],
+      "auth_required": false,
+      "returns": "JSON with created user and assistant messages",
+      "description": "Primary chat endpoint: accepts 'content' and optional 'mode' (training|interview) and returns AI response. Frontend posts here at `/api/ai/messages`.",
+      "request": {
+        "params": {},
+        "body": {
+          "content": "string (required, max:10000)",
+          "mode": "string (optional) - one of: 'training','interview'",
+          "agent_id": "string (optional) - frontend may set to target a specific agent"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{ user: {id,role:'user',content,mode,created_at}, assistant: {id,role:'assistant',content,mode,created_at} }"
+      }
+    },
+    {
+      "section": "Fortify (authentication) - conditional",
+      "note": "These endpoints come from Laravel Fortify and may be enabled/disabled via config/features. Middleware typically includes 'web', 'guest', or 'auth'.",
+      "endpoints": [
+        {"method":"GET","path":"/login","controller":"Laravel\\Fortify\\Http\\Controllers\\AuthenticatedSessionController@create","middleware":["guest"],"description":"Login form (if views enabled)","request":{"params":{},"body":null},"response":{"status":200,"body":"HTML login form"}},
+        {"method":"POST","path":"/login","controller":"Laravel\\Fortify\\Http\\Controllers\\AuthenticatedSessionController@store","middleware":["guest","throttle(login)"],"request":{"body":{"email":"string","password":"string","remember":"boolean (optional)"}},"response":{"status":302,"body":"Redirect on success or 422/401 on failure"}},
+        {"method":"POST","path":"/logout","controller":"Laravel\\Fortify\\Http\\Controllers\\AuthenticatedSessionController@destroy","middleware":["auth"],"request":{"body":null},"response":{"status":302,"body":"Redirect to /"}},
+        {"method":"GET","path":"/forgot-password","controller":"Laravel\\Fortify\\Http\\Controllers\\PasswordResetLinkController@create","middleware":["guest"],"conditional":"Features::resetPasswords()","request":{"params":{},"body":null},"response":{"status":200,"body":"HTML form"}},
+        {"method":"POST","path":"/forgot-password","controller":"Laravel\\Fortify\\Http\\Controllers\\PasswordResetLinkController@store","middleware":["guest"],"conditional":"Features::resetPasswords()","request":{"body":{"email":"string"}},"response":{"status":302,"body":"Redirect with status or 422"}},
+        {"method":"GET","path":"/reset-password/{token}","controller":"Laravel\\Fortify\\Http\\Controllers\\NewPasswordController@create","middleware":["guest"],"conditional":"Features::resetPasswords()","request":{"params":{"token":"string"}},"response":{"status":200,"body":"HTML form to set new password"}},
+        {"method":"POST","path":"/reset-password","controller":"Laravel\\Fortify\\Http\\Controllers\\NewPasswordController@store","middleware":["guest"],"conditional":"Features::resetPasswords()","request":{"body":{"token":"string","email":"string","password":"string","password_confirmation":"string"}},"response":{"status":302,"body":"Redirect on success or 422"}},
+        {"method":"GET","path":"/register","controller":"Laravel\\Fortify\\Http\\Controllers\\RegisteredUserController@create","middleware":["guest"],"conditional":"Features::registration()","request":{"params":{},"body":null},"response":{"status":200,"body":"HTML registration form"}},
+        {"method":"POST","path":"/register","controller":"Laravel\\Fortify\\Http\\Controllers\\RegisteredUserController@store","middleware":["guest"],"conditional":"Features::registration()","request":{"body":{"name":"string","email":"string","password":"string","password_confirmation":"string"}},"response":{"status":302,"body":"Redirect on success or 422"}},
+        {"method":"GET","path":"/email/verify","controller":"Laravel\\Fortify\\Http\\Controllers\\EmailVerificationPromptController","middleware":["auth"],"conditional":"Features::emailVerification()","request":{"params":{},"body":null},"response":{"status":200,"body":"HTML prompt"}},
+        {"method":"GET","path":"/email/verify/{id}/{hash}","controller":"Laravel\\Fortify\\Http\\Controllers\\VerifyEmailController","middleware":["auth","signed","throttle"],"conditional":"Features::emailVerification()","request":{"params":{"id":"int","hash":"string"}},"response":{"status":302,"body":"Redirect with verification status"}},
+        {"method":"POST","path":"/email/verification-notification","controller":"Laravel\\Fortify\\Http\\Controllers\\EmailVerificationNotificationController@store","middleware":["auth","throttle"],"conditional":"Features::emailVerification()","request":{"body":null},"response":{"status":202,"body":"Accepted (email sent)"}},
+        {"method":"PUT","path":"/user/profile-information","controller":"Laravel\\Fortify\\Http\\Controllers\\ProfileInformationController@update","middleware":["auth"],"conditional":"Features::updateProfileInformation()","request":{"body":{"name":"string","email":"string","other":"..."}},"response":{"status":302,"body":"Redirect on success"}},
+        {"method":"PUT","path":"/user/password","controller":"Laravel\\Fortify\\Http\\Controllers\\PasswordController@update","middleware":["auth"],"conditional":"Features::updatePasswords()","request":{"body":{"password":"string","password_confirmation":"string"}},"response":{"status":302,"body":"Redirect on success"}},
+        {"method":"GET","path":"/user/confirm-password","controller":"Laravel\\Fortify\\Http\\Controllers\\ConfirmablePasswordController@show","middleware":["auth"],"conditional":"views enabled","request":{"params":{},"body":null},"response":{"status":200,"body":"HTML confirm password form"}},
+        {"method":"POST","path":"/user/confirm-password","controller":"Laravel\\Fortify\\Http\\Controllers\\ConfirmablePasswordController@store","middleware":["auth"],"request":{"body":{"password":"string"}},"response":{"status":302,"body":"Redirect on success or 422"}}
+      ]
+    },
+    {
+      "section": "Passkeys (Laravel Passkeys) - conditional",
+      "note": "Passkeys routes provided by Laravel Passkeys / Fortify when passkeys feature is enabled.",
+      "endpoints": [
+        {"method":"GET","path":"/passkeys/login/options","controller":"Laravel\\Passkeys\\Http\\Controllers\\PasskeyLoginController@index","middleware":["guest","throttle"],"description":"Options used by frontend to start passkey login","request":{"params":{},"body":null},"response":{"status":200,"body":"JSON options payload"}},
+        {"method":"POST","path":"/passkeys/login","controller":"Laravel\\Passkeys\\Http\\Controllers\\PasskeyLoginController@store","middleware":["guest","throttle"],"request":{"body":{"assertion":"object from client"}},"response":{"status":200,"body":"Authentication result or 422"}},
+        {"method":"GET","path":"/passkeys/confirm/options","controller":"Laravel\\Passkeys\\Http\\Controllers\\PasskeyConfirmationController@index","middleware":["auth","throttle"],"request":{"params":{},"body":null},"response":{"status":200,"body":"JSON options for confirmation"}},
+        {"method":"POST","path":"/passkeys/confirm","controller":"Laravel\\Passkeys\\Http\\Controllers\\PasskeyConfirmationController@store","middleware":["auth","throttle"],"request":{"body":{"assertion":"object"}},"response":{"status":200,"body":"Confirmation result"}},
+        {"method":"GET","path":"/user/passkeys/options","controller":"Laravel\\Passkeys\\Http\\Controllers\\PasskeyRegistrationController@index","middleware":["auth","password.confirm","throttle"],"description":"Passkey registration options for the authenticated user","request":{"params":{},"body":null},"response":{"status":200,"body":"JSON registration options"}},
+        {"method":"POST","path":"/user/passkeys","controller":"Laravel\\Passkeys\\Http\\Controllers\\PasskeyRegistrationController@store","middleware":["auth","password.confirm","throttle"],"request":{"body":{"credential":"object from client","name":"string"}},"response":{"status":201,"body":"Created passkey object"}},
+        {"method":"DELETE","path":"/user/passkeys/{passkey}","controller":"Laravel\\Passkeys\\Http\\Controllers\\PasskeyRegistrationController@destroy","middleware":["auth","password.confirm"],"description":"Remove a registered passkey","request":{"params":{"passkey":"id"}},"response":{"status":204,"body":"No content"}}
+      ]
+    }
+  ]
+}
