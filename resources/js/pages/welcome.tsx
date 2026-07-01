@@ -3,16 +3,19 @@ import {
     AlertCircle,
     ArrowUp,
     BadgeCheck,
+    ChevronDown,
+    CheckCircle2,
     GraduationCap,
     Keyboard,
+    Lightbulb,
     Loader2,
     MessageSquareText,
-    Mic,
     Moon,
     PhoneOff,
     Radio,
     RotateCcw,
     Sun,
+    TrendingUp,
     User,
 } from 'lucide-react';
 import type { FormEvent, KeyboardEvent, ReactNode, RefObject } from 'react';
@@ -30,6 +33,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { OfficerVoiceChatService } from '@/services/OfficerVoiceChatService';
 
 type MessageRole = 'user' | 'assistant';
 type InterviewMode = 'training' | 'interview';
@@ -50,6 +54,14 @@ interface ServerMessage {
 interface ChatMessage extends ServerMessage {
     localId?: string;
     status?: 'pending' | 'failed';
+}
+
+interface TrainingFeedback {
+    score: number;
+    strengths: string[];
+    weaknesses: string[];
+    suggestions: string[];
+    nextStep: string;
 }
 
 interface StoreMessageResponse {
@@ -78,6 +90,13 @@ interface InterviewSessionState {
     last_answer_quality: string | null;
     evaluation_ready: boolean;
     completed: boolean;
+    setup_stage: 'mode_selection' | 'visa_selection' | 'documents' | 'complete';
+    setup_completed: boolean;
+    current_question_skippable: boolean;
+    document_question_skipped: boolean;
+    accepted_dynamic_questions: number;
+    minimum_questions: number;
+    maximum_questions: number;
 }
 
 const emptyLiveMessages: ChatMessage[] = [];
@@ -96,6 +115,13 @@ const defaultChatSessionState: InterviewSessionState = {
     last_answer_quality: null,
     evaluation_ready: false,
     completed: false,
+    setup_stage: 'mode_selection',
+    setup_completed: false,
+    current_question_skippable: false,
+    document_question_skipped: false,
+    accepted_dynamic_questions: 0,
+    minimum_questions: 3,
+    maximum_questions: 10,
 };
 const defaultLiveSessionState: InterviewSessionState = {
     ...defaultChatSessionState,
@@ -131,6 +157,44 @@ function formatTime(value: string) {
 
 function isFinalReport(content: string) {
     return content.includes('FINAL REPORT') || content.includes('Performance Report');
+}
+
+function parseTrainingFeedback(content: string): TrainingFeedback | null {
+    const scoreMatch = content.match(/^\s*Score:\s*(\d{1,3})%\s*/i);
+
+    if (!scoreMatch) {
+        return null;
+    }
+
+    const strengths = content.match(/1\.\s*Strengths:\s*([\s\S]*?)(?=\n\s*2\.\s*Weaknesses:)/i);
+    const weaknesses = content.match(/2\.\s*Weaknesses:\s*([\s\S]*?)(?=\n\s*3\.\s*Improvement Suggestions:)/i);
+    const suggestions = content.match(/3\.\s*Improvement Suggestions:\s*([\s\S]*?)(?=\n\s*4\.\s*Retry\s*\/\s*Next Step:)/i);
+    const nextStep = content.match(/4\.\s*Retry\s*\/\s*Next Step:\s*([\s\S]*)$/i);
+
+    if (!strengths || !weaknesses || !suggestions || !nextStep) {
+        return null;
+    }
+
+    return {
+        score: Math.max(0, Math.min(100, Number(scoreMatch[1]))),
+        strengths: splitFeedbackItems(strengths[1]),
+        weaknesses: splitFeedbackItems(weaknesses[1]),
+        suggestions: splitFeedbackItems(suggestions[1]),
+        nextStep: nextStep[1].trim(),
+    };
+}
+
+function splitFeedbackItems(value: string) {
+    const cleaned = value.trim();
+
+    if (!cleaned) {
+        return [];
+    }
+
+    return cleaned
+        .split(/\s*;\s*|\n+\s*(?:[-•]\s*)?/u)
+        .map((item) => item.trim())
+        .filter(Boolean);
 }
 
 function textPreview(content?: string) {
@@ -186,62 +250,33 @@ function getInitialTheme(): ThemeMode {
     return window.localStorage.getItem('officer-charles-theme') === 'light' ? 'light' : 'dark';
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-
-    for (const byte of bytes) {
-        binary += String.fromCharCode(byte);
-    }
-
-    return window.btoa(binary);
+function normalizeLiveContent(content: string) {
+    return content.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function base64ToUint8Array(value: string) {
-    const binary = window.atob(value);
-    const bytes = new Uint8Array(binary.length);
+function isNoisyLiveTranscript(content: string) {
+    const normalizedContent = normalizeLiveContent(content);
 
-    for (let index = 0; index < binary.length; index += 1) {
-        bytes[index] = binary.charCodeAt(index);
-    }
-
-    return bytes;
-}
-
-function downsampleBuffer(buffer: Float32Array, inputSampleRate: number, outputSampleRate: number) {
-    if (outputSampleRate === inputSampleRate) {
-        return buffer;
-    }
-
-    const ratio = inputSampleRate / outputSampleRate;
-    const newLength = Math.round(buffer.length / ratio);
-    const result = new Float32Array(newLength);
-
-    for (let offset = 0; offset < result.length; offset += 1) {
-        const start = Math.floor(offset * ratio);
-        const end = Math.min(Math.floor((offset + 1) * ratio), buffer.length);
-        let sum = 0;
-
-        for (let index = start; index < end; index += 1) {
-            sum += buffer[index];
-        }
-
-        result[offset] = sum / Math.max(end - start, 1);
-    }
-
-    return result;
-}
-
-function floatToPcm16Base64(input: Float32Array, inputSampleRate: number, outputSampleRate = 24000) {
-    const samples = downsampleBuffer(input, inputSampleRate, outputSampleRate);
-    const pcm = new Int16Array(samples.length);
-
-    for (let index = 0; index < samples.length; index += 1) {
-        const sample = Math.max(-1, Math.min(1, samples[index]));
-        pcm[index] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-    }
-
-    return arrayBufferToBase64(pcm.buffer);
+    return normalizedContent.startsWith('transcribe')
+        || normalizedContent.startsWith('translate')
+        || normalizedContent === 'transcribe in english only.'
+        || normalizedContent === 'transcribe in english only'
+        || normalizedContent === 'translate in english only.'
+        || normalizedContent === 'translate in english only'
+        || normalizedContent === 'english only'
+        || normalizedContent.includes('transcribed by')
+        || normalizedContent.includes('otter.ai')
+        || normalizedContent.includes('msworddoc')
+        || normalizedContent.includes('word.document')
+        || normalizedContent.includes('word document')
+        || normalizedContent.includes('microsoft word')
+        || normalizedContent.includes('applicant speaking english during a us visa interview practice session')
+        || normalizedContent.includes('return only the applicant')
+        || normalizedContent.includes('spoken words in english')
+        || normalizedContent.includes('video description')
+        || normalizedContent.includes('http://')
+        || normalizedContent.includes('https://')
+        || normalizedContent.includes('www.');
 }
 
 export function ChatExperience({ messages }: Props) {
@@ -268,14 +303,8 @@ export function ChatExperience({ messages }: Props) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const liveMessagesEndRef = useRef<HTMLDivElement>(null);
     const mobileLiveMessagesEndRef = useRef<HTMLDivElement>(null);
-    const wsRef = useRef<WebSocket | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const audioStreamRef = useRef<MediaStream | null>(null);
-    const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-    const audioProcessorRef = useRef<ScriptProcessorNode | null>(null);
-    const liveRecordingRef = useRef(false);
+    const liveVoiceServiceRef = useRef<OfficerVoiceChatService | null>(null);
     const liveAssistantIdRef = useRef<number | null>(null);
-    const liveAudioPlayingRef = useRef(0);
 
     const mode = DEFAULT_MODE;
     const visaType = DEFAULT_VISA_TYPE;
@@ -347,10 +376,6 @@ export function ChatExperience({ messages }: Props) {
         liveMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
         mobileLiveMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }, [activeLiveMessages]);
-
-    useEffect(() => {
-        liveRecordingRef.current = liveRecording;
-    }, [liveRecording]);
 
     useEffect(() => {
         if (!textareaRef.current) {
@@ -522,9 +547,20 @@ return;
                 return {
                     ...currentSessions,
                     [liveSessionKey]: currentMessages.map((message) =>
-                        message.id === activeAssistantId ? { ...message, content: `${message.content}${delta}` } : message,
+                        message.id === activeAssistantId && normalizeLiveContent(message.content) !== normalizeLiveContent(delta)
+                            ? { ...message, content: `${message.content}${delta}` }
+                            : message,
                     ),
                 };
+            }
+
+            const previousAssistant = currentMessages
+                .slice()
+                .reverse()
+                .find((message) => message.role === 'assistant');
+
+            if (previousAssistant && normalizeLiveContent(previousAssistant.content) === normalizeLiveContent(delta)) {
+                return currentSessions;
             }
 
             const id = Date.now() * -1;
@@ -548,158 +584,91 @@ return;
     }, [liveSessionKey, mode, visaType]);
 
     const finalizeLiveAssistant = useCallback(() => {
+        const activeAssistantId = liveAssistantIdRef.current;
+
+        if (!activeAssistantId) {
+            return;
+        }
+
+        setLiveMessagesBySession((currentSessions) => {
+            const currentMessages = currentSessions[liveSessionKey] ?? [];
+            const activeIndex = currentMessages.findIndex((message) => message.id === activeAssistantId);
+
+            if (activeIndex < 0) {
+                return currentSessions;
+            }
+
+            const activeMessage = currentMessages[activeIndex];
+            const activeContent = activeMessage.content.trim();
+
+            if (!activeContent) {
+                return {
+                    ...currentSessions,
+                    [liveSessionKey]: currentMessages.filter((message) => message.id !== activeAssistantId),
+                };
+            }
+
+            const previousAssistant = currentMessages
+                .slice(0, activeIndex)
+                .reverse()
+                .find((message) => message.role === 'assistant');
+
+            if (previousAssistant && normalizeLiveContent(previousAssistant.content) === normalizeLiveContent(activeContent)) {
+                return {
+                    ...currentSessions,
+                    [liveSessionKey]: currentMessages.filter((message) => message.id !== activeAssistantId),
+                };
+            }
+
+            return currentSessions;
+        });
+
         liveAssistantIdRef.current = null;
-    }, []);
+    }, [liveSessionKey]);
 
     const addLiveUserMessage = useCallback((content: string) => {
-        if (!content.trim()) {
+        const trimmedContent = content.trim();
+
+        if (!trimmedContent || isNoisyLiveTranscript(trimmedContent)) {
 return;
 }
 
-        setLiveMessagesBySession((currentSessions) => ({
-            ...currentSessions,
-            [liveSessionKey]: [
-                ...(currentSessions[liveSessionKey] ?? []),
-                {
-                    id: Date.now() * -1,
-                    role: 'user',
-                    content,
-                    created_at: new Date().toISOString(),
-                    mode,
-                    visa_type: visaType,
-                },
-            ],
-        }));
+        setLiveMessagesBySession((currentSessions) => {
+            const currentMessages = currentSessions[liveSessionKey] ?? [];
+            const previousUser = currentMessages
+                .slice()
+                .reverse()
+                .find((message) => message.role === 'user');
+
+            if (previousUser && normalizeLiveContent(previousUser.content) === normalizeLiveContent(trimmedContent)) {
+                return currentSessions;
+            }
+
+            return {
+                ...currentSessions,
+                [liveSessionKey]: [
+                    ...currentMessages,
+                    {
+                        id: Date.now() * -1,
+                        role: 'user',
+                        content: trimmedContent,
+                        created_at: new Date().toISOString(),
+                        mode,
+                        visa_type: visaType,
+                    },
+                ],
+            };
+        });
     }, [liveSessionKey, mode, visaType]);
 
-    const playDirectAudio = useCallback((audioBase64: string, mimeType = 'audio/mpeg') => {
-        if (!audioBase64) {
-return;
-}
-
-        const bytes = base64ToUint8Array(audioBase64);
-        const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
-        const audio = new Audio(url);
-
-        liveAudioPlayingRef.current += 1;
-        setLiveSpeaking(true);
-
-        const finish = () => {
-            URL.revokeObjectURL(url);
-            liveAudioPlayingRef.current = Math.max(0, liveAudioPlayingRef.current - 1);
-
-            if (liveAudioPlayingRef.current === 0) {
-                setLiveSpeaking(false);
-            }
-        };
-
-        audio.onended = finish;
-        audio.onerror = finish;
-        void audio.play().catch(finish);
-    }, []);
-
     const stopLiveInterview = useCallback(() => {
-        wsRef.current?.close();
-        wsRef.current = null;
-
-        audioProcessorRef.current?.disconnect();
-        audioSourceRef.current?.disconnect();
-        audioStreamRef.current?.getTracks().forEach((track) => track.stop());
-
-        audioProcessorRef.current = null;
-        audioSourceRef.current = null;
-        audioStreamRef.current = null;
+        liveVoiceServiceRef.current?.close();
+        liveVoiceServiceRef.current = null;
         setLiveConnected(false);
         setLiveConnecting(false);
         setLiveRecording(false);
         setLiveSpeaking(false);
-        liveRecordingRef.current = false;
-        liveAudioPlayingRef.current = 0;
         liveAssistantIdRef.current = null;
-    }, []);
-
-    const handleLiveMessage = useCallback((event: MessageEvent<string>) => {
-        const data = event.data;
-
-        try {
-            const payload = JSON.parse(data);
-
-            if (payload.type === 'ready') {
-                setLiveConnected(true);
-                setLiveConnecting(false);
-                setLiveError(null);
-
-                return;
-            }
-
-            if (payload.type === 'session.state') {
-                setLiveSessionState(payload.state ?? null);
-
-                return;
-            }
-
-            if (payload.type === 'transcription') {
-                addLiveUserMessage(payload.message ?? '');
-
-                return;
-            }
-
-            if (payload.type === 'direct.reply') {
-                const message = payload.message ?? '';
-                appendLiveAssistantDelta(message);
-                finalizeLiveAssistant();
-
-                return;
-            }
-
-            if (payload.type === 'direct.audio') {
-                playDirectAudio(payload.audio ?? '', payload.mime_type ?? 'audio/mpeg');
-
-                return;
-            }
-
-            if (payload.type === 'error') {
-                setLiveError(payload.message ?? 'Live interview error.');
-
-                return;
-            }
-        } catch {
-            return;
-        }
-    }, [addLiveUserMessage, appendLiveAssistantDelta, finalizeLiveAssistant, playDirectAudio]);
-
-    const startAudioCapture = useCallback(async (socket: WebSocket) => {
-        const audioContext = new AudioContext({ sampleRate: 24000 });
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                channelCount: 1,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-            },
-        });
-        const source = audioContext.createMediaStreamSource(stream);
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
-
-        processor.onaudioprocess = (event) => {
-            const output = event.outputBuffer.getChannelData(0);
-            output.fill(0);
-
-            if (!liveRecordingRef.current || socket.readyState !== WebSocket.OPEN) {
-                return;
-            }
-
-            const input = event.inputBuffer.getChannelData(0);
-            socket.send(JSON.stringify({ _bin: floatToPcm16Base64(input, audioContext.sampleRate, 24000) }));
-        };
-
-        source.connect(processor);
-        processor.connect(audioContext.destination);
-
-        audioContextRef.current = audioContext;
-        audioStreamRef.current = stream;
-        audioSourceRef.current = source;
-        audioProcessorRef.current = processor;
     }, []);
 
     const startLiveInterview = async () => {
@@ -733,41 +702,46 @@ return;
                 throw new Error(payload?.message ?? 'Could not start live interview.');
             }
 
-            const socket = new WebSocket(payload.ws_url);
-            setLiveSessionState(payload.session_state ?? defaultLiveSessionState);
-            wsRef.current = socket;
-            socket.onmessage = handleLiveMessage;
-            socket.onerror = () => setLiveError('Live interview websocket error.');
-            socket.onclose = () => {
-                setLiveConnected(false);
-                setLiveRecording(false);
-                liveRecordingRef.current = false;
-            };
+            if (!payload?.session_id || !payload?.ws_url) {
+                throw new Error('Live interview service returned an invalid session.');
+            }
 
-            await startAudioCapture(socket);
+            const service = new OfficerVoiceChatService({
+                onMessage: (message) => {
+                    if (message.role === 'user') {
+                        addLiveUserMessage(message.content);
+                    }
+                },
+                onAssistantDelta: appendLiveAssistantDelta,
+                onAssistantDone: finalizeLiveAssistant,
+                onSessionState: (state) => setLiveSessionState((state as InterviewSessionState | null) ?? null),
+                onReady: () => {
+                    setLiveConnected(true);
+                    setLiveConnecting(false);
+                    setLiveError(null);
+                    void service.startRecording();
+                },
+                onError: (message) => setLiveError(message),
+                onClose: () => {
+                    setLiveConnected(false);
+                    setLiveRecording(false);
+                },
+                onRecordingStart: () => setLiveRecording(true),
+                onRecordingStop: () => setLiveRecording(false),
+                onSpeakingStart: () => setLiveSpeaking(true),
+                onSpeakingEnd: () => setLiveSpeaking(false),
+            }, payload.sample_rate ?? 24000);
+
+            setLiveSessionState(payload.session_state ?? defaultLiveSessionState);
+            liveVoiceServiceRef.current = service;
+            await service.setupAudio(payload.sample_rate ?? 24000);
+            service.setupWs(payload.session_id, payload.ws_url);
         } catch (requestError) {
             setLiveError(requestError instanceof Error ? requestError.message : 'Could not start live interview.');
             stopLiveInterview();
         } finally {
             setLiveConnecting(false);
         }
-    };
-
-    const toggleLiveRecording = () => {
-        if (!liveConnected || !wsRef.current) {
-return;
-}
-
-        if (liveRecording) {
-            setLiveRecording(false);
-            liveRecordingRef.current = false;
-            wsRef.current.send(JSON.stringify({ type: 'command', command: 'commit' }));
-
-            return;
-        }
-
-        setLiveRecording(true);
-        liveRecordingRef.current = true;
     };
 
     const selectExperienceMode = (nextExperienceMode: ExperienceMode) => {
@@ -803,7 +777,6 @@ return;
                     <LiveMicControls
                         connected={liveConnected}
                         onEnd={stopLiveInterview}
-                        onToggleRecording={toggleLiveRecording}
                         recording={liveRecording}
                     />
                     <section className="oc-chat-panel oc-live-transcript-panel oc-mobile-sheet-transcript">
@@ -880,7 +853,6 @@ return;
                                 <LiveMicControls
                                     connected={liveConnected}
                                     onEnd={stopLiveInterview}
-                                    onToggleRecording={toggleLiveRecording}
                                     recording={liveRecording}
                                 />
                             </section>
@@ -1031,9 +1003,9 @@ function SessionProgressPanel({
     sessionState: InterviewSessionState | null;
     userCount: number;
 }) {
-    const answeredCount = sessionState?.answered_questions.length ?? 0;
-    const totalQuestions = sessionState?.total_questions ?? 0;
-    const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+    const accepted = sessionState?.accepted_dynamic_questions ?? 0;
+    const minimum = sessionState?.minimum_questions ?? 3;
+    const maximum = sessionState?.maximum_questions ?? 10;
 
     return (
         <section className="oc-session-summary-panel">
@@ -1047,17 +1019,7 @@ function SessionProgressPanel({
                 </Badge>
             </div>
 
-            <div className="oc-progress-block">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="oc-subtle text-xs">{totalQuestions > 0 ? `${answeredCount} of ${totalQuestions} answered` : 'Progress starts after setup'}</span>
-                    <span className="oc-progress-value">{progress}%</span>
-                </div>
-                <div className="oc-progress-track">
-                    <div className="oc-progress-bar" style={{ width: `${progress}%` }} />
-                </div>
-            </div>
-
-            <div className="oc-session-stats grid grid-cols-2 gap-2">
+            <div className="oc-session-stats grid grid-cols-2 gap-2 mt-6">
                 <div>
                     <span>{formatSelectedMode(sessionState?.selected_mode)}</span>
                     <p>Practice mode</p>
@@ -1076,7 +1038,11 @@ function SessionProgressPanel({
                 <p className="oc-kicker">Latest response</p>
                 <p>{textPreview(latestAssistant?.content)}</p>
             </div>
-            <p className="oc-subtle text-xs">{userCount} user answers in this session</p>
+            <p className="oc-subtle text-xs">
+                {sessionState?.setup_completed
+                    ? `${accepted}/${maximum} accepted dynamic questions · minimum ${minimum}`
+                    : `${userCount} setup responses`}
+            </p>
         </section>
     );
 }
@@ -1159,7 +1125,7 @@ function LiveTranscriptEmpty({ connected }: { connected: boolean }) {
         <div className="oc-live-empty">
             <MessageSquareText className="h-6 w-6" />
             <h3>{connected ? 'Transcript will appear here' : 'Start the live interview'}</h3>
-            <p>{connected ? 'Your spoken answers and Officer Charles responses will stream into this panel.' : 'Connect first, then use the mic control to answer questions.'}</p>
+            <p>{connected ? 'Your spoken answers and Officer Charles responses will stream into this panel.' : 'Start the interview and speak naturally when Officer Charles asks a question.'}</p>
         </div>
     );
 }
@@ -1179,9 +1145,6 @@ function SidebarCards({
     sessionState: InterviewSessionState | null;
     userCount: number;
 }) {
-    const answeredCount = sessionState?.answered_questions.length ?? 0;
-    const totalQuestions = sessionState?.total_questions ?? 0;
-    const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : null;
     const checklistItems = [
         ...(sessionState?.answered_questions ?? []).map((question) => ({
             key: `answered-${question}`,
@@ -1189,7 +1152,7 @@ function SidebarCards({
             status: 'Answered',
             active: false,
         })),
-        ...(sessionState?.current_question
+        ...(sessionState?.setup_completed && sessionState.current_question
             ? [{
                 key: `current-${sessionState.current_question}`,
                 label: sessionState.current_question,
@@ -1234,7 +1197,11 @@ function SidebarCards({
                     <Badge className="oc-mode-badge" variant="outline">
                         {experience.shortLabel}
                     </Badge>
-                    <span className="oc-subtle text-xs">{userCount} user answers</span>
+                    <span className="oc-subtle text-xs">
+                        {sessionState?.setup_completed
+                            ? `${sessionState.accepted_dynamic_questions}/${sessionState.maximum_questions} accepted`
+                            : `${userCount} setup responses`}
+                    </span>
                 </div>
                 <Button
                     type="button"
@@ -1248,30 +1215,6 @@ function SidebarCards({
                 </Button>
             </section>
 
-            <section className="oc-sidebar-card oc-scroll-card">
-                <div className="mb-4 flex items-center gap-3">
-                    <div className="oc-card-icon">
-                        <MessageSquareText className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <p className="oc-kicker">Real Progress</p>
-                        <h3 className="oc-card-title">{progress === null ? 'Not started yet' : `${progress}% complete`}</h3>
-                    </div>
-                </div>
-                {progress === null ? (
-                    <p className="oc-card-copy mt-3">Progress begins after Officer Charles starts the interview questions.</p>
-                ) : (
-                    <>
-                        <div className="mb-3 mt-4 flex items-center justify-between gap-3">
-                            <span className="oc-subtle text-xs">{answeredCount} of {totalQuestions} answered</span>
-                            <span className="oc-progress-value">{progress}%</span>
-                        </div>
-                        <div className="oc-progress-track">
-                            <div className="oc-progress-bar" style={{ width: `${progress}%` }} />
-                        </div>
-                    </>
-                )}
-            </section>
 
             <section className="oc-sidebar-card oc-readiness-card oc-scroll-card">
                 <div className="mb-4 flex items-center gap-3">
@@ -1316,12 +1259,7 @@ function MobileDetailsSheet({
     sessionState: InterviewSessionState | null;
     userCount: number;
 }) {
-    const answeredCount = sessionState?.answered_questions.length ?? 0;
-    const totalQuestions = sessionState?.total_questions ?? 0;
-    const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : null;
-    const summary = progress === null
-        ? `${formatPhase(sessionState?.phase)}. ${userCount} user answers.`
-        : `${progress}% complete. ${answeredCount} of ${totalQuestions} answered.`;
+    const summary = `${formatPhase(sessionState?.phase)}. ${userCount} user answers.`;
 
     return (
         <div className="oc-mobile-details">
@@ -1461,38 +1399,28 @@ function LiveInterviewStage({
 function LiveMicControls({
     connected,
     onEnd,
-    onToggleRecording,
     recording,
 }: {
     connected: boolean;
     onEnd: () => void;
-    onToggleRecording: () => void;
     recording: boolean;
 }) {
     if (!connected) {
         return null;
     }
 
-    const buttonLabel = recording ? 'Send answer' : 'Start speaking';
-
     return (
         <footer className="oc-live-control-wrap">
             <div className="oc-live-control-panel">
                 <Button
                     type="button"
-                    onClick={onToggleRecording}
-                    className={cn('oc-live-mic-button', recording && 'is-recording')}
-                    aria-label={buttonLabel}
+                    onClick={onEnd}
+                    className={cn('oc-live-mic-button oc-live-stop-button', recording && 'is-recording')}
+                    aria-label="Stop live interview"
                 >
-                    <Mic className="h-6 w-6" />
+                    <PhoneOff className="h-6 w-6" />
                 </Button>
-                <span className="oc-live-mic-label">{buttonLabel}</span>
-                {connected && (
-                    <Button type="button" variant="ghost" onClick={onEnd} className="oc-live-end-inline">
-                        <PhoneOff className="h-4 w-4" />
-                        End
-                    </Button>
-                )}
+                <span className="oc-live-mic-label">Stop interview</span>
             </div>
         </footer>
     );
@@ -1533,6 +1461,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     const isUser = message.role === 'user';
     const failed = message.status === 'failed';
     const pending = message.status === 'pending';
+    const trainingFeedback = !isUser ? parseTrainingFeedback(message.content) : null;
 
     return (
         <article className={cn('flex gap-3 sm:gap-4', isUser ? 'justify-end' : 'justify-start')}>
@@ -1553,6 +1482,8 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                         </div>
                         <p className="whitespace-pre-wrap text-sm leading-7">{message.content}</p>
                     </div>
+                ) : trainingFeedback ? (
+                    <TrainingFeedbackCard feedback={trainingFeedback} />
                 ) : (
                     <div className={cn(isUser ? 'oc-user-bubble' : 'oc-assistant-bubble', failed && 'is-failed', pending && 'is-pending')}>
                         <p className="whitespace-pre-wrap">{message.content}</p>
@@ -1574,6 +1505,83 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 </Avatar>
             )}
         </article>
+    );
+}
+
+function TrainingFeedbackCard({ feedback }: { feedback: TrainingFeedback }) {
+    const passed = feedback.score >= 80;
+
+    return (
+        <div className={cn('oc-training-feedback-card', passed ? 'is-passed' : 'is-retry')}>
+            <div className="oc-training-feedback-head">
+                <div>
+                    <p className="oc-training-feedback-eyebrow">Training Feedback</p>
+                    <h3>{passed ? 'Ready for next question' : 'Retry recommended'}</h3>
+                </div>
+                <div className="oc-score-pill">
+                    <span>{feedback.score}%</span>
+                    {passed ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                </div>
+            </div>
+
+            <div className="oc-feedback-grid">
+                <FeedbackSection
+                    className="is-strength"
+                    icon={<BadgeCheck className="h-4 w-4" />}
+                    items={feedback.strengths}
+                    title="Strengths"
+                />
+                <FeedbackSection
+                    className="is-weakness"
+                    icon={<AlertCircle className="h-4 w-4" />}
+                    items={feedback.weaknesses}
+                    title="Weaknesses"
+                />
+                <FeedbackSection
+                    className="is-suggestion"
+                    icon={<Lightbulb className="h-4 w-4" />}
+                    items={feedback.suggestions}
+                    title="Improvement Suggestions"
+                />
+            </div>
+
+            <div className="oc-next-step-panel">
+                <div className="oc-feedback-section-title">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Retry / Next Step</span>
+                </div>
+                <p>{feedback.nextStep}</p>
+            </div>
+        </div>
+    );
+}
+
+function FeedbackSection({
+    className,
+    icon,
+    items,
+    title,
+}: {
+    className: string;
+    icon: ReactNode;
+    items: string[];
+    title: string;
+}) {
+    return (
+        <details className={cn('oc-feedback-section', className)} open>
+            <summary className="oc-feedback-section-title">
+                <span className="oc-feedback-section-label">
+                    {icon}
+                    <span>{title}</span>
+                </span>
+                <ChevronDown className="oc-feedback-section-chevron h-4 w-4" />
+            </summary>
+            <ul>
+                {(items.length ? items : ['No details provided.']).map((item, index) => (
+                    <li key={`${title}-${index}`}>{item}</li>
+                ))}
+            </ul>
+        </details>
     );
 }
 

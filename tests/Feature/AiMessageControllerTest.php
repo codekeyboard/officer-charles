@@ -31,6 +31,13 @@ function fakeSessionState(array $overrides = []): array
         'last_answer_quality' => null,
         'evaluation_ready' => false,
         'completed' => false,
+        'setup_stage' => 'mode_selection',
+        'setup_completed' => false,
+        'current_question_skippable' => false,
+        'document_question_skipped' => false,
+        'accepted_dynamic_questions' => 0,
+        'minimum_questions' => 3,
+        'maximum_questions' => 10,
     ], $overrides);
 }
 
@@ -66,8 +73,9 @@ test('ai message stores selected visa type and calls core v3 chat', function () 
         && $request['content'] === 'Start my interview.'
         && $request['mode'] === 'interview'
         && $request['visa_type'] === 'b1_b2'
-        && $request['session_target'] === 12
-        && isset($request['gemini']['api_key']));
+        && is_string($request['visitor_id'])
+        && is_string($request['session_id'])
+        && ! isset($request['gemini']));
 });
 
 test('training chat forwards to core v3 and stores returned retry state', function () {
@@ -101,7 +109,10 @@ test('training chat forwards to core v3 and stores returned retry state', functi
     Http::assertSent(fn ($request) => $request->url() === 'http://127.0.0.1:8020/chat'
         && $request['mode'] === 'training'
         && $request['visa_type'] === 'f1'
-        && $request['content'] === 'My parents will pay.');
+        && $request['content'] === 'My parents will pay.'
+        && is_string($request['visitor_id'])
+        && is_string($request['session_id'])
+        && ! isset($request['gemini']));
 });
 
 test('real simulation asks for final report only after target interview turns', function () {
@@ -152,7 +163,10 @@ test('real simulation asks for final report only after target interview turns', 
     Http::assertSent(fn ($request) => $request->url() === 'http://127.0.0.1:8020/chat'
         && count($request['history']) === 12
         && $request['mode'] === 'interview'
-        && $request['visa_type'] === 'b1_b2');
+        && $request['visa_type'] === 'b1_b2'
+        && $request['visitor_id'] === $visitorId
+        && $request['session_id'] === $sessionId
+        && ! isset($request['gemini']));
 });
 
 test('core v3 chat failure keeps the user answer saved', function () {

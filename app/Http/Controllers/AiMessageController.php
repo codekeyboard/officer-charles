@@ -14,8 +14,6 @@ use Illuminate\Support\Str;
 
 class AiMessageController extends Controller
 {
-    private const SESSION_TARGET = 12;
-
     private const INACTIVITY_TIMEOUT_MINUTES = 5;
 
     private const VISITOR_COOKIE = 'officer_charles_visitor';
@@ -63,7 +61,7 @@ class AiMessageController extends Controller
         ]);
 
         try {
-            $coreResponse = $this->callCoreV3Chat($request->input('content'), $history, $mode, $visaType);
+            $coreResponse = $this->callCoreV3Chat($request->input('content'), $history, $mode, $visaType, $visitorId, $sessionId);
         } catch (ConnectionException|\RuntimeException $exception) {
             Log::error('Core V3 chat response error', ['message' => $exception->getMessage()]);
 
@@ -223,9 +221,22 @@ class AiMessageController extends Controller
 
         $sessionId = $response->json('session_id');
 
+        if (! is_string($sessionId) || $sessionId === '') {
+            Log::error('Core V3 live session malformed response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return response()->json([
+                'message' => 'Could not start the live interview service.',
+            ], 502);
+        }
+
         return $this->withVisitorCookie(response()->json([
             'session_id' => $sessionId,
             'ws_url' => rtrim(config('services.core_v3.ws_public_url'), '/').'/ws/'.$sessionId,
+            'sample_rate' => 24000,
+            'message_protocol' => 'htask-v1',
             'session_state' => $this->defaultSessionState('live'),
         ]), $visitorId);
     }
@@ -233,12 +244,8 @@ class AiMessageController extends Controller
     /**
      * @return array{content: string, state: array<string, mixed>|null}
      */
-    private function callCoreV3Chat(string $userMessage, array $history, string $mode, string $visaType): array
+    private function callCoreV3Chat(string $userMessage, array $history, string $mode, string $visaType, string $visitorId, string $sessionId): array
     {
-        if (! filled(config('services.gemini.api_key'))) {
-            throw new \RuntimeException('Gemini API key is not configured.');
-        }
-
         $response = Http::timeout(60)
             ->acceptJson()
             ->post($this->coreV3BaseUrl().'/chat', [
@@ -246,12 +253,8 @@ class AiMessageController extends Controller
                 'history' => $history,
                 'mode' => $mode,
                 'visa_type' => $visaType,
-                'session_target' => self::SESSION_TARGET,
-                'gemini' => [
-                    'api_key' => config('services.gemini.api_key'),
-                    'model' => config('services.gemini.model', 'gemini-2.5-flash'),
-                    'fallback_model' => config('services.gemini.fallback_model', 'gemini-2.5-flash-lite'),
-                ],
+                'visitor_id' => $visitorId,
+                'session_id' => $sessionId,
             ]);
 
         if ($response->failed()) {
@@ -334,6 +337,13 @@ class AiMessageController extends Controller
             'last_answer_quality' => null,
             'evaluation_ready' => false,
             'completed' => false,
+            'setup_stage' => 'mode_selection',
+            'setup_completed' => false,
+            'current_question_skippable' => false,
+            'document_question_skipped' => false,
+            'accepted_dynamic_questions' => 0,
+            'minimum_questions' => 3,
+            'maximum_questions' => 10,
         ];
     }
 

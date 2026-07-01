@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\AiMessageController::index
-* @see app/Http/Controllers/AiMessageController.php:115
+* @see app/Http/Controllers/AiMessageController.php:113
 * @route '/api/ai/messages'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::index
-* @see app/Http/Controllers/AiMessageController.php:115
+* @see app/Http/Controllers/AiMessageController.php:113
 * @route '/api/ai/messages'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::index
-* @see app/Http/Controllers/AiMessageController.php:115
+* @see app/Http/Controllers/AiMessageController.php:113
 * @route '/api/ai/messages'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AiMessageController::index
-* @see app/Http/Controllers/AiMessageController.php:115
+* @see app/Http/Controllers/AiMessageController.php:113
 * @route '/api/ai/messages'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AiMessageController::index
-* @see app/Http/Controllers/AiMessageController.php:115
+* @see app/Http/Controllers/AiMessageController.php:113
 * @route '/api/ai/messages'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\AiMessageController::index
-* @see app/Http/Controllers/AiMessageController.php:115
+* @see app/Http/Controllers/AiMessageController.php:113
 * @route '/api/ai/messages'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AiMessageController::index
-* @see app/Http/Controllers/AiMessageController.php:115
+* @see app/Http/Controllers/AiMessageController.php:113
 * @route '/api/ai/messages'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\AiMessageController::store
-* @see app/Http/Controllers/AiMessageController.php:29
+* @see app/Http/Controllers/AiMessageController.php:27
 * @route '/api/ai/messages'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::store
-* @see app/Http/Controllers/AiMessageController.php:29
+* @see app/Http/Controllers/AiMessageController.php:27
 * @route '/api/ai/messages'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::store
-* @see app/Http/Controllers/AiMessageController.php:29
+* @see app/Http/Controllers/AiMessageController.php:27
 * @route '/api/ai/messages'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AiMessageController::store
-* @see app/Http/Controllers/AiMessageController.php:29
+* @see app/Http/Controllers/AiMessageController.php:27
 * @route '/api/ai/messages'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\AiMessageController::store
-* @see app/Http/Controllers/AiMessageController.php:29
+* @see app/Http/Controllers/AiMessageController.php:27
 * @route '/api/ai/messages'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -138,7 +138,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\AiMessageController::restart
-* @see app/Http/Controllers/AiMessageController.php:151
+* @see app/Http/Controllers/AiMessageController.php:149
 * @route '/api/ai/restart'
 */
 export const restart = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -153,7 +153,7 @@ restart.definition = {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::restart
-* @see app/Http/Controllers/AiMessageController.php:151
+* @see app/Http/Controllers/AiMessageController.php:149
 * @route '/api/ai/restart'
 */
 restart.url = (options?: RouteQueryOptions) => {
@@ -162,7 +162,7 @@ restart.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::restart
-* @see app/Http/Controllers/AiMessageController.php:151
+* @see app/Http/Controllers/AiMessageController.php:149
 * @route '/api/ai/restart'
 */
 restart.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -172,7 +172,7 @@ restart.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AiMessageController::restart
-* @see app/Http/Controllers/AiMessageController.php:151
+* @see app/Http/Controllers/AiMessageController.php:149
 * @route '/api/ai/restart'
 */
 const restartForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -182,7 +182,7 @@ const restartForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =
 
 /**
 * @see \App\Http\Controllers\AiMessageController::restart
-* @see app/Http/Controllers/AiMessageController.php:151
+* @see app/Http/Controllers/AiMessageController.php:149
 * @route '/api/ai/restart'
 */
 restartForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -194,7 +194,7 @@ restart.form = restartForm
 
 /**
 * @see \App\Http\Controllers\AiMessageController::liveSession
-* @see app/Http/Controllers/AiMessageController.php:185
+* @see app/Http/Controllers/AiMessageController.php:183
 * @route '/api/ai/live-session'
 */
 export const liveSession = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -209,7 +209,7 @@ liveSession.definition = {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::liveSession
-* @see app/Http/Controllers/AiMessageController.php:185
+* @see app/Http/Controllers/AiMessageController.php:183
 * @route '/api/ai/live-session'
 */
 liveSession.url = (options?: RouteQueryOptions) => {
@@ -218,7 +218,7 @@ liveSession.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AiMessageController::liveSession
-* @see app/Http/Controllers/AiMessageController.php:185
+* @see app/Http/Controllers/AiMessageController.php:183
 * @route '/api/ai/live-session'
 */
 liveSession.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -228,7 +228,7 @@ liveSession.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AiMessageController::liveSession
-* @see app/Http/Controllers/AiMessageController.php:185
+* @see app/Http/Controllers/AiMessageController.php:183
 * @route '/api/ai/live-session'
 */
 const liveSessionForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -238,7 +238,7 @@ const liveSessionForm = (options?: RouteQueryOptions): RouteFormDefinition<'post
 
 /**
 * @see \App\Http\Controllers\AiMessageController::liveSession
-* @see app/Http/Controllers/AiMessageController.php:185
+* @see app/Http/Controllers/AiMessageController.php:183
 * @route '/api/ai/live-session'
 */
 liveSessionForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

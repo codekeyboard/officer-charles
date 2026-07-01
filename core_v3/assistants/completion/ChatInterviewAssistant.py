@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -168,18 +169,27 @@ class ChatInterviewAssistant:
         total_questions = len(questions)
 
         if selected_mode == "training":
-            current_question = questions[0]
-            answered_questions = [current_question] if (user_message or "").strip() else []
+            response_question = self._latest_question_from_text(assistant_response or "", questions)
+            history_question = self._latest_question_from_history(history, questions)
+            current_question = response_question or history_question or questions[0]
+            current_question_index = questions.index(current_question) + 1 if current_question in questions else 1
+            score = self._score_from_text(assistant_response or "")
+            completed = bool(assistant_response and "Training Session Complete" in assistant_response)
+            answered_questions = []
+            if completed:
+                answered_questions = questions
+            elif score is not None and score >= 80 and current_question in questions:
+                answered_questions = questions[:max(0, current_question_index - 1)]
             return self._state_payload(
-                phase="training",
+                phase="completed" if completed else "training",
                 selected_mode=selected_mode,
                 selected_visa_type=selected_visa_type,
-                current_question=current_question,
-                current_question_index=1,
+                current_question=None if completed else current_question,
+                current_question_index=total_questions if completed else current_question_index,
                 total_questions=total_questions,
                 answered_questions=answered_questions,
-                evaluation_ready=False,
-                completed=False,
+                evaluation_ready=completed,
+                completed=completed,
             )
 
         answered_count = min(self._active_user_answer_count(history, user_message), total_questions)
@@ -260,11 +270,22 @@ class ChatInterviewAssistant:
         opening = F1_OPENING if selected_visa_type == "f1" else B1_B2_OPENING
 
         if selected_mode == "training":
+            current_question = self._latest_question_from_history(history, questions) or questions[0]
+            current_index = questions.index(current_question) if current_question in questions else 0
+            next_question = questions[current_index + 1] if current_index + 1 < len(questions) else None
+            next_question_instruction = (
+                f'If the score is 80% or higher, section 4 must ask this next question: "{next_question}"'
+                if next_question
+                else "If the score is 80% or higher, section 4 must say training is complete and summarize next steps."
+            )
             return (
                 f"{self._base_instruction()}\n\n"
                 "CHAT COMPLETION SERVICE: Training Session.\n"
                 "The user has answered the latest visa practice question. Respond as a supportive visa interview coach.\n"
+                f'Current practice question: "{current_question}"\n'
+                "Score the answer from 0 to 100 for relevance, clarity, honesty, specificity, and interview readiness.\n"
                 "Provide exactly these sections:\n"
+                "Score: <percentage>%\n"
                 "1. Strengths\n"
                 "- What the applicant did well\n"
                 "2. Weaknesses\n"
@@ -274,8 +295,9 @@ class ChatInterviewAssistant:
                 "3. Improvement Suggestions\n"
                 "- How to make the answer clearer\n"
                 "- How to communicate better\n"
-                "4. Retry\n"
-                "- Ask the applicant to answer the same question again.\n"
+                "4. Retry / Next Step\n"
+                "- If the score is below 80%, ask the applicant to answer the same current question again.\n"
+                f"- {next_question_instruction}\n"
                 "Teach, explain mistakes, encourage honesty, and never invent fake answers for the applicant."
             )
 
@@ -288,6 +310,7 @@ class ChatInterviewAssistant:
             f"{self._base_instruction()}\n\n"
             "CHAT COMPLETION SERVICE: Real Interview Simulation.\n"
             "Stay in realistic visa officer character. Do not coach, give hints, explain mistakes, or provide feedback.\n"
+            "Before the final evaluation, never include Strengths, Weaknesses, Improvement Suggestions, Retry, scores, or coaching language.\n"
             "Ask exactly one question at a time.\n"
             f'Ask this next realistic officer question: "{questions[next_index]}"\n'
             "If the user's answer is unclear, ask one concise follow-up instead of moving ahead."
@@ -354,6 +377,31 @@ class ChatInterviewAssistant:
                 continue
             turns += 1
         return turns
+
+    def _latest_question_from_history(self, history: list[dict[str, str]], questions: list[str]) -> str | None:
+        for message in reversed(history):
+            if message.get("role") != "assistant":
+                continue
+
+            question = self._latest_question_from_text(str(message.get("content", "")), questions)
+            if question:
+                return question
+
+        return None
+
+    def _latest_question_from_text(self, content: str, questions: list[str]) -> str | None:
+        for question in reversed(questions):
+            if question in content:
+                return question
+
+        return None
+
+    def _score_from_text(self, content: str) -> int | None:
+        match = re.search(r"score\s*:\s*(\d{1,3})\s*%", str(content or ""), flags=re.IGNORECASE)
+        if not match:
+            return None
+
+        return max(0, min(100, int(match.group(1))))
 
     def _active_user_answer_count(self, history: list[dict[str, str]], user_message: str | None = None) -> int:
         session_started = False

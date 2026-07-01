@@ -1096,7 +1096,8 @@
 
     .oc-user-bubble,
     .oc-assistant-bubble,
-    .oc-report-card {
+    .oc-report-card,
+    .oc-training-feedback-card {
         border-radius: 1.1rem;
         padding: 0.95rem 1rem;
         font-size: 0.93rem;
@@ -1111,7 +1112,8 @@
     }
 
     .oc-assistant-bubble,
-    .oc-report-card {
+    .oc-report-card,
+    .oc-training-feedback-card {
         border: 1px solid var(--oc-border);
         color: var(--oc-text);
         background: var(--oc-assistant-bg);
@@ -1125,6 +1127,181 @@
         background:
             radial-gradient(circle at top right, color-mix(in oklab, var(--oc-accent) 16%, transparent), transparent 18rem),
             var(--oc-assistant-bg);
+    }
+
+    .oc-training-feedback-card {
+        width: min(100%, 42rem);
+        padding: 0;
+        overflow: hidden;
+        border-color: var(--oc-border-strong);
+    }
+
+    .oc-training-feedback-card.is-passed {
+        background:
+            radial-gradient(circle at top right, color-mix(in oklab, var(--oc-success) 18%, transparent), transparent 16rem),
+            var(--oc-assistant-bg);
+    }
+
+    .oc-training-feedback-card.is-retry {
+        background:
+            radial-gradient(circle at top right, color-mix(in oklab, var(--oc-danger) 14%, transparent), transparent 16rem),
+            var(--oc-assistant-bg);
+    }
+
+    .oc-training-feedback-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--oc-border);
+    }
+
+    .oc-training-feedback-head h3 {
+        margin-top: 0.15rem;
+        font-size: 1rem;
+        font-weight: 850;
+        line-height: 1.25;
+    }
+
+    .oc-training-feedback-eyebrow {
+        color: var(--oc-muted);
+        font-size: 0.68rem;
+        font-weight: 850;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .oc-score-pill {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 0.45rem;
+        min-width: 5rem;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.45rem 0.65rem;
+        color: var(--oc-text);
+        font-size: 0.9rem;
+        font-weight: 900;
+        border: 1px solid currentColor;
+        background: color-mix(in oklab, var(--oc-surface-strong) 72%, transparent);
+    }
+
+    .oc-training-feedback-card.is-passed .oc-score-pill {
+        color: var(--oc-success);
+    }
+
+    .oc-training-feedback-card.is-retry .oc-score-pill {
+        color: var(--oc-danger);
+    }
+
+    .oc-feedback-grid {
+        display: grid;
+        gap: 0.75rem;
+        padding: 0.9rem;
+    }
+
+    .oc-feedback-section,
+    .oc-next-step-panel {
+        border-radius: 0.9rem;
+        padding: 0.85rem;
+        border: 1px solid var(--oc-border);
+        background: color-mix(in oklab, var(--oc-surface-soft) 78%, transparent);
+    }
+
+    .oc-feedback-section.is-strength {
+        border-color: color-mix(in oklab, var(--oc-success) 42%, transparent);
+        background: color-mix(in oklab, var(--oc-success) 12%, transparent);
+    }
+
+    .oc-feedback-section.is-weakness {
+        border-color: color-mix(in oklab, var(--oc-danger) 46%, transparent);
+        background: color-mix(in oklab, var(--oc-danger) 13%, transparent);
+    }
+
+    .oc-feedback-section.is-suggestion {
+        border-color: color-mix(in oklab, var(--oc-gold) 48%, transparent);
+        background: color-mix(in oklab, var(--oc-gold) 12%, transparent);
+    }
+
+    .oc-feedback-section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.45rem;
+        margin-bottom: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 850;
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .oc-feedback-section-title::-webkit-details-marker {
+        display: none;
+    }
+
+    .oc-feedback-section-label {
+        display: inline-flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .oc-feedback-section-chevron {
+        flex-shrink: 0;
+        color: currentColor;
+        transition: transform 160ms ease;
+    }
+
+    .oc-feedback-section[open] .oc-feedback-section-chevron {
+        transform: rotate(180deg);
+    }
+
+    .oc-feedback-section.is-strength .oc-feedback-section-title {
+        color: var(--oc-success);
+    }
+
+    .oc-feedback-section.is-weakness .oc-feedback-section-title {
+        color: var(--oc-danger);
+    }
+
+    .oc-feedback-section.is-suggestion .oc-feedback-section-title {
+        color: var(--oc-gold);
+    }
+
+    .oc-feedback-section ul {
+        display: grid;
+        gap: 0.45rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        color: var(--oc-text);
+        font-size: 0.88rem;
+        line-height: 1.55;
+    }
+
+    .oc-feedback-section li {
+        overflow-wrap: anywhere;
+    }
+
+    .oc-next-step-panel {
+        margin: 0 0.9rem 0.9rem;
+        border-color: color-mix(in oklab, var(--oc-accent) 46%, transparent);
+        background: color-mix(in oklab, var(--oc-accent) 11%, transparent);
+    }
+
+    .oc-next-step-panel .oc-feedback-section-title {
+        color: var(--oc-accent);
+    }
+
+    .oc-next-step-panel p {
+        margin: 0;
+        color: var(--oc-text);
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
     }
 
     .oc-user-bubble.is-failed,
@@ -1449,11 +1626,35 @@
 
         .oc-user-bubble,
         .oc-assistant-bubble,
-        .oc-report-card {
+        .oc-report-card,
+        .oc-training-feedback-card {
             font-size: 0.88rem;
             line-height: 1.5;
             padding: 0.75rem 0.85rem;
             border-radius: 0.95rem;
+        }
+
+        .oc-training-feedback-card {
+            padding: 0;
+        }
+
+        .oc-training-feedback-head {
+            align-items: flex-start;
+            padding: 0.85rem;
+        }
+
+        .oc-score-pill {
+            min-width: 4.4rem;
+            padding: 0.38rem 0.5rem;
+            font-size: 0.82rem;
+        }
+
+        .oc-feedback-grid {
+            padding: 0.75rem;
+        }
+
+        .oc-next-step-panel {
+            margin: 0 0.75rem 0.75rem;
         }
 
         .oc-sidebar-card {

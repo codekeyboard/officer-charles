@@ -247,6 +247,7 @@ class RealtimeCoreOpenAI():
       "response.text.delta":                                      self.rt_text_delta_handler,
       "response.text.done":                                       self.rt_response_text_done,
       "conversation.item.input_audio_transcription.completed":    self.rt_transcription_handler,
+      "input_audio_buffer.speech_stopped":                        self.rt_speech_stopped_handler,
       'response.audio_transcript.delta':                          self.rt_response_transcription_delta,
       'session.updated':                                          self.rt_wsc_session,
       'session.created':                                          self.rt_wsc_session,
@@ -399,12 +400,7 @@ class RealtimeCoreOpenAI():
       self.waiting_for_command = None
 
     if command == 'commit':
-      if self.audio_buffers_count:
-        self.wsc_clearlog('input_audio_buffer.committed')
-        self.wsc_send(self.rp.audio_commit())
-        self.wsc_wait('input_audio_buffer.committed')
-      else:
-        debug(f"[{self.CLASS_NAME}] WARNING: No Audio in buffer to commit.")
+      self.commit_input_audio()
     
     elif command == 'text':
       input_text = payload.get('payload')
@@ -663,6 +659,21 @@ class RealtimeCoreOpenAI():
     })
 
     self.mutual_request_next_reply()
+
+  def rt_speech_stopped_handler(self, payload):
+    if self.DEBUG > 1: dd(f"[{self.CLASS_NAME}] WSC: SPEECH STOPPED")
+    self.commit_input_audio(wait=False)
+
+  def commit_input_audio(self, wait=True):
+    if not self.audio_buffers_count:
+      debug(f"[{self.CLASS_NAME}] WARNING: No Audio in buffer to commit.")
+      return
+
+    self.wsc_clearlog('input_audio_buffer.committed')
+    self.wsc_send(self.rp.audio_commit())
+    if wait:
+      self.wsc_wait('input_audio_buffer.committed')
+    self.audio_buffers_count = 0
 
   def mutual_user_callback(self, mesage):
     # Call User Message Listners
