@@ -1,0 +1,42 @@
+{
+  "name": "officer-charles-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node -r ./core/util/register-aliases.js src/index.js",
+    "start": "node -r ./core/util/register-aliases.js src/index.js",
+    "test": "jest --runInBand --detectOpenHandles",
+    "test:routes": "jest --runInBand tests/routes",
+    "orm": "sequelize",
+    "db:migrate": "sequelize db:migrate",
+    "db:migrate:undo": "sequelize db:migrate:undo:all",
+    "db:seed": "sequelize db:seed:all",
+    "db:seed:undo": "sequelize db:seed:undo:all",
+    "email:test": "node -r ./core/util/register-aliases.js scripts/test-email.js",
+    "example:chat": "node example/chatinterview.mjs",
+    "example:foundry": "node example/foundryChatInterview.mjs",
+    "example:voice": "node example/voice.mjs",
+    "test:dry-chat": "node example/dryRunChatInterview.mjs"
+  },
+  "dependencies": {
+    "@azure/ai-voicelive": "^1.0.0",
+    "@azure/core-auth": "^1.10.1",
+    "@azure/identity": "^4.13.1",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^9.0.3",
+    "pg": "^8.13.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7",
+    "stripe": "^22.3.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "sequelize-cli": "^6.6.3",
+    "supertest": "^7.0.0"
+  }
+}

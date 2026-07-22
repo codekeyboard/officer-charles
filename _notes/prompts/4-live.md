@@ -1,6 +1,0 @@
-The live inetervie has problem it should ollow the same questions as steps. 
-
-But like assitant hsuld ask first or all traiingir real simulation so assitnat would stpp after askign queation and wait for user to make repsonse if user select any other them than let openai by tool call to select 1 and ad in payload orlocal sorage i user said out of ontext things that ask the same again if user give asnwer of antohr question and assitant asked somehting else it should checkc if prevoius payload are updated or local stroage udptaed if not gthan it should ask the missiing one untill all completed so handle the reposnse liiek this assitant should ot stop like hwait i am porcpicing such type of reponse make assitant stop and halunicate to t should rmeian in context and follow lal teh steps fill all the payload and end the inteviww.
-
-
-for paractce mode user answer a question openai score it and give strgbth and weknes and ask again untill fullfuil or score increase more than 80 but in rela simulaiton it should not ask acoring to scoring if assitant ind in context answer that it huld move and at the naswet it hsuold score as did already so test whole assintant everystep so assitant woul never stuck betewwen conversation and these thing should working.
