@@ -37,7 +37,7 @@ const rawEnv = {
   SERVER_HOST: readString('SERVER_HOST', '127.0.0.1'),
   SERVER_PORT: readString('SERVER_PORT', readString('PORT', '4000')),
   PORT: readString('PORT', ''),
-  CORS_ORIGINS: readString('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000,http://localhost:8080,http://localhost:8081'),
+  CORS_ORIGINS: readString('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000,http://localhost:3001,http://localhost:8080,http://localhost:8081'),
   DATABASE_URL: readString('DATABASE_URL', ''),
   DB_DIALECT: readString('DB_DIALECT', 'postgres'),
   DB_HOST: readString('DB_HOST', '127.0.0.1'),

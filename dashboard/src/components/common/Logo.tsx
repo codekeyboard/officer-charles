@@ -7,28 +7,23 @@ export function Logo({
   variant?: "default" | "light";
   size?: "md" | "lg";
 }) {
-  const titleClass = variant === "light" ? "text-white" : "text-foreground";
-  const subtitleClass = variant === "light" ? "text-cyan-100/75" : "text-muted-foreground";
-  const markSize = size === "lg" ? "h-14 w-14" : "h-10 w-10";
-  const titleSize = size === "lg" ? "text-xl" : "text-sm";
-  const subtitleSize = size === "lg" ? "text-xs" : "text-[10px]";
+  const logoSize = size === "lg" ? "h-20" : "h-16";
+  const tileClass =
+    variant === "light"
+      ? "border-white/20 bg-white/90 shadow-black/10"
+      : "border-border bg-white shadow-black/5";
+
   return (
-    <div className={`flex items-center ${size === "lg" ? "gap-3" : "gap-2.5"}`}>
-      <div className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full border border-white/15 bg-slate-950 purple-glow ${markSize}`}>
-        <img
-          src="/logo.png"
-          alt="Officer Charles logo"
-          className="h-full w-full object-cover object-center"
-          loading="eager"
-          decoding="async"
-        />
-      </div>
-      {!collapsed && (
-        <div className="min-w-0">
-          <div className={`font-semibold leading-tight ${titleSize} ${titleClass}`}>Officer Charles</div>
-          <div className={`uppercase tracking-widest ${subtitleSize} ${subtitleClass}`}>AI Visa Interview</div>
-        </div>
-      )}
+    <div
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border px-3 py-2 shadow-sm ${tileClass}`}
+    >
+      <img
+        src={collapsed ? "/logo.png" : "/new-logo.png"}
+        alt="Officer Charles"
+        className={collapsed ? "h-10 w-10 rounded-full object-cover object-center" : `${logoSize} w-auto object-contain`}
+        loading="eager"
+        decoding="async"
+      />
     </div>
   );
 }

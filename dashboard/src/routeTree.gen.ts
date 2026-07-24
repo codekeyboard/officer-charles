@@ -26,6 +26,7 @@ import { Route as UserDashboardRouteImport } from './routes/user.dashboard'
 import { Route as UserChatInterviewRouteImport } from './routes/user.chat-interview'
 import { Route as UserBillingRouteImport } from './routes/user.billing'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -124,6 +125,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const AuthCompleteRoute = AuthCompleteRouteImport.update({
+  id: '/auth/complete',
+  path: '/auth/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/auth/complete': typeof AuthCompleteRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/user/billing': typeof UserBillingRoute
   '/user/chat-interview': typeof UserChatInterviewRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/auth/complete': typeof AuthCompleteRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/user/billing': typeof UserBillingRoute
   '/user/chat-interview': typeof UserChatInterviewRoute
@@ -265,6 +273,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/auth/complete': typeof AuthCompleteRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/user/billing': typeof UserBillingRoute
   '/user/chat-interview': typeof UserChatInterviewRoute
@@ -298,6 +307,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/users'
+    | '/auth/complete'
     | '/blog/$slug'
     | '/user/billing'
     | '/user/chat-interview'
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/users'
+    | '/auth/complete'
     | '/blog/$slug'
     | '/user/billing'
     | '/user/chat-interview'
@@ -360,6 +371,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/users'
+    | '/auth/complete'
     | '/blog/$slug'
     | '/user/billing'
     | '/user/chat-interview'
@@ -383,6 +395,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   RegisterRoute: typeof RegisterRoute
   UserRoute: typeof UserRouteWithChildren
+  AuthCompleteRoute: typeof AuthCompleteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -505,6 +518,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/blog/$slug'
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
+    }
+    '/auth/complete': {
+      id: '/auth/complete'
+      path: '/auth/complete'
+      fullPath: '/auth/complete'
+      preLoaderRoute: typeof AuthCompleteRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
       id: '/admin/users'
@@ -689,6 +709,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   RegisterRoute: RegisterRoute,
   UserRoute: UserRouteWithChildren,
+  AuthCompleteRoute: AuthCompleteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

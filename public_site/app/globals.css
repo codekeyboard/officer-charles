@@ -39,6 +39,28 @@ a {
   background: rgba(196, 216, 46, 0.5);
 }
 
+.auth-next-input {
+  height: 3.25rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #d8d0bf;
+  background: #fffdf8;
+  padding: 0 0.875rem;
+  font-size: 0.95rem;
+  color: #191814;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.auth-next-input:focus {
+  border-color: #0f766e;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
+
 @keyframes marquee-left {
   from {
     transform: translate3d(0, 0, 0);
