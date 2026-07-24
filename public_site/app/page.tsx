@@ -70,7 +70,7 @@ function Header() {
     <header className="fixed left-0 right-0 top-4 z-50 px-4">
       <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-lg border border-[#dfd7c8] bg-white/86 px-3 py-2 shadow-[0_16px_48px_rgba(43,36,26,0.12)] backdrop-blur-xl">
         <Link href="/" className="flex items-center" aria-label="Officer Charles home">
-          <Image src="/new-logo.jpeg" alt="" width={56} height={56} className="rounded-lg object-cover" />
+          <Image src="/new-logo.png" alt="" width={104} height={72} className="h-[72px] w-auto rounded-lg object-contain" />
         </Link>
         <div className="hidden items-center gap-1 text-sm font-medium text-[#6d665c] md:flex">
           {navItems.map((item) => (
@@ -507,7 +507,7 @@ function FooterSection() {
       <div className="mx-auto flex max-w-6xl flex-col gap-10 border-t border-[#ded7ca] pt-10 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-xl">
           <div className="flex items-center gap-3">
-            <Image src="/new-logo.jpeg" alt="" width={44} height={44} className="rounded-lg object-cover" />
+            <Image src="/new-logo.png" alt="" width={64} height={44} className="h-11 w-auto rounded-lg object-contain" />
             <div>
               <p className="text-xs font-semibold uppercase text-[#6d665c]">Officer Charles</p>
               <p className="text-lg font-semibold">Practice US visa interviews</p>

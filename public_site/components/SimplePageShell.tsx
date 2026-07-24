@@ -21,11 +21,11 @@ export function SimplePageShell({
         <header className="flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-3">
             <Image
-              src="/new-logo.jpeg"
+              src="/new-logo.png"
               alt=""
-              width={40}
+              width={58}
               height={40}
-              className="rounded-lg object-cover"
+              className="h-10 w-auto rounded-lg object-contain"
             />
             <span className="font-semibold">Officer Charles</span>
           </Link>
